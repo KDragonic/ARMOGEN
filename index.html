@@ -1,0 +1,130 @@
+ <!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link type="text/css" rel="stylesheet" media="all" href="css/style.css" id="theme_css" />
+	<script src="js/vue.js" defer></script>
+	<script src="js/main.js" defer></script>
+	<title>ARMOGEN</title>
+</head>
+<body>
+	<div id="app">
+		<header>
+			<div class="divHeader_1" :class="{fillSearch: search.length==0}">
+				<img v-if="uncoveredNav" title="Название" src="img/logo_name_2.png" height="80" class="log_name">
+				<img v-if="!uncoveredNav" title="Название" src="img/logo_name.png" height="80" class="log_name">
+				<input class="search" v-model="search" placeholder="Поиск..." v-bind:style="{ display: searchDisplay }">
+			</div>
+			<nav v-if="uncoveredNav">
+				<div  v-on:click.prevent="uncoveredNav = !uncoveredNav"><a v-if="search.length==0" title="Развернуть" href="#">&#10094;&#10094;</a></div>
+				<div><a v-if="search.length==0" title="Информация" href="#" v-on:click.prevent="switchingPage('info');">?</a></div>
+				<div><a v-if="search.length==0" title="Сообщества" href="#" v-on:click.prevent="switchingPage('community')"><img src="img/premium-icon-people-3633313.png" alt="Сообщества"></a></div>
+				<div><a v-if="search.length==0" title="Лента" href="#" v-on:click.prevent="switchingPage('posts')"><img src="img/free-icon-ancient-scroll-3172695.png" alt="Лента"></a></div>
+				<div><a v-if="search.length==0" title="Топ игроков" href="#" v-on:click.prevent="switchingPage('top')"><img src="img/premium-icon-goblet-1755874.png" alt="Топ"></a></div>
+				<div><a v-if="search.length==0" title="Мой профиль" href="#" v-on:click.prevent="userInstallation(currenUser.id); switchingPage('user')"><img src="img\free-icon-avatar-168871.png" alt="Профиль"></a></div>
+			</nav>
+			<nav v-else>
+				<div  v-on:click.prevent="uncoveredNav = !uncoveredNav"><a v-if="search.length==0" title="Свернуть" href="#">&#10095;&#10095;</a></div>
+				<div><a v-if="search.length==0" title="Информация" href="#" v-on:click.prevent="switchingPage('info');">Справка</a></div>
+				<div><a v-if="search.length==0" title="Сообщества" href="#" v-on:click.prevent="switchingPage('community')">Сообщества</a></div>
+				<div><a v-if="search.length==0" title="Лента" href="#" v-on:click.prevent="switchingPage('posts')">Лента</a></div>
+				<div><a v-if="search.length==0" title="Топ игроков" href="#" v-on:click.prevent="switchingPage('top')">Топ</a></div>
+				<div><a v-if="search.length==0" title="Мой профиль" href="#" v-on:click.prevent="userInstallation(currenUser.id); switchingPage('user')">Профиль</a></div>
+			</nav>
+		</header>
+
+		<div v-if="tab == 'info'">
+			<div class="block">
+				<h2>Навигация</h2>
+				<p>? - информация о сайте</p>
+				<p>Сообщества - список все сообществ куда можно вступить</p>
+				<p>Лента - список все постов</p>
+				<p>Сообщества - твой профиль</p>
+			</div>
+
+			<div class="block">
+				<h2>Поиск</h2>
+				<p>У поиска есть несколько режимов</p>
+				<p>НазваниеПоста - ищет пост по названию</p>
+				<p>@АвторПоста - ищет пост по нику автора поста</p>
+				<p>#ХешТег - ищет пост по тегу</p>
+				<p>^Текст - ищет пост по тексту поста</p>
+				<p>(Текст в несколько слов) - Если текст в скобках то можно искать точное совпадение несколько слов подрят</p>
+				<p>-Текст или !Текст - Уберает из резутата посты которые нашлись с помощю этого филтра</p>
+				<p>И конечно можно их соеденять например: [#Моб @МултиМаг -#new], будет искать все посты с тегом #Моб, но там где нету тега #new у пользователя Денис</p>
+				
+			</div>
+		</div>
+		<div v-if="tab == 'posts'">
+			<div class="block">
+				<a href="#" style="display: inline;" v-for="tag in getListAllTag" v-on:click.prevent="switchSelTag(tag)" :class="{onTag: isSelTag(tag), offTag: !isSelTag(tag)}">{{tag}} </a>
+			</div>
+			<div class="block"v-for="post in getListPost">
+				<span class = "date">{{post.date.toLocaleString()}} </span>
+				<a :style="{color: getColorUser(getUserFormID(post.id_user).rank)}" href="#" v-on:click.prevent="userInstallation(post.id_user); switchingPage('user')">[{{user[post.id_user].nickname}}]</a>
+				<p class="tag">{{getJoinTags(post.id)}}</p>
+				<h2 v-bind:class="{topPost:(post.id_user == 0), name:(post.id_user !== 0)}">
+					{{post.name}}
+				</h2>
+				<p class = "post_text" @click="switchItemUncoveredPostsID(post.id)">{{abbreviationsTextPost(200, post.id)}}</p>
+				<div class="DivLike">
+					<span class="yesText" v-if="isLikePost(post)">Лайк [{{post.like.length}}]</span>
+					<span class="noText" v-on:click.prevent="post.like.push(currenUser.id)" v-else>Лайк [{{post.like.length}}]</span>
+
+					<span class="yesText" v-if="isSavedPostUser(post)" v-on:click.prevent="deliteSavePost(post.id)">Сохранено</span>
+					<span class="noText" v-on:click.prevent="user[currenUser.id].savePost.push(post.id)" v-else>Сохранить</span>
+				</div>
+			</div>
+		</div>
+		<div v-if="tab == 'top'">
+			<div class="topHeader">
+				<div :class="{selectThis: selectCatalogTopUser == 0}" @click="selectCatalogTopUser=0"><a href="#" v-on:click.prevent="">Ранг</a></div>
+				<div :class="{selectThis: selectCatalogTopUser == 1}" @click="selectCatalogTopUser=1"><a href="#" v-on:click.prevent="">Лайки</a></div>
+				<div :class="{selectThis: selectCatalogTopUser == 2}" @click="selectCatalogTopUser=2"><a href="#" v-on:click.prevent="">Посты</a></div>
+				<div :class="{selectThis: selectCatalogTopUser == 3}" @click="selectCatalogTopUser=3"><a href="#" v-on:click.prevent="">По именам</a></div>
+			</div>
+			<div class="block" style="display: flex; justify-content: space-between;" v-for="use in user">
+				<a href="#" style="font-size: 40px; margin-top: 0; margin-bottom: 0;" v-on:click.prevent="userInstallation(use.id); switchingPage('user')">{{use.nickname}}: {{countPostUserID(use.id)}}</a>
+				<a href="#" style="font-size: 40px;  margin-top: 0; margin-bottom: 0;" :style="{color: getColorUser(use.rank)}">{{use.rank}}</a>
+			</div>
+		</div>
+		<div v-if="tab == 'user'">
+			<div class="block">
+				<h2>{{openUserObj.nickname}}</h2>
+				<h3>Настоящие имя: {{openUserObj.name}}</h3>
+				<h3>Ранг: {{openUserObj.rank}}</h3>
+				<h3>Возраст: {{openUserObj.age}}</h3>
+				<h3>Количество постов: {{countPostUserID(openUserID)}}</h3>
+				<h3 @click.prevent="search = '@' + openUserObj.nickname; switchingPage('posts')" style="color: rgb(0,255,0);">Показать посты пользователя</h3>
+			</div>
+
+			<div class="block" v-if="getSavedPostsUser(openUserID).length > 0"> <h3 id="savePostText">Сохраненые посты</h3> </div>
+
+			<div class="block">
+				<a href="#" style="display: inline;"  v-if="getSavedPostsUser(openUserID).length > 0" v-for="tag in getListAllTag" v-on:click.prevent="switchSelTag(tag)" :class="{onTag: isSelTag(tag), offTag: !isSelTag(tag)}">{{tag}} </a>
+			</div>
+
+			<div class="block" v-for="post in getListPost">
+				<span class = "date">{{post.date.toLocaleString()}} </span>
+				<a :style="{color: getColorUser(post.id_user)}" href="#" v-on:click.prevent="userInstallation(post.id_user); switchingPage('user')">[{{user[post.id_user].nickname}}]</a>
+				<p class="tag">{{getJoinTags(post.id)}}</p>
+				<h2 v-bind:class="{topPost:(post.id_user == 0), name:(post.id_user !== 0)}">
+					{{post.name}}
+				</h2>
+				<p class = "post_text" @click="switchItemUncoveredPostsID(post.id)">{{abbreviationsTextPost(200, post.id)}}</p>
+				<div class="DivLike">
+					<span class="yesText" v-if="isLikePost(post)">Лайк [{{post.like.length}}]</span>
+					<span class="noText" v-on:click.prevent="post.like.push(currenUser.id)" v-else>Лайк [{{post.like.length}}]</span>
+
+					<span class="yesText" v-if="isSavedPostUser(post)" v-on:click.prevent="deliteSavePost(post.id)">Сохранено</span>
+					<span class="noText" v-on:click.prevent="user[currenUser.id].savePost.push(post.id)" v-else>Сохранить</span>
+				</div>
+			</div>
+		</div>
+		<div v-if="tab == 'community'">
+			<div class="block" style="font-size: 30pt; 	text-align: center;">Тут пока что нечего нету</div>
+		</div>
+	</div>
+</body>
+</html>
